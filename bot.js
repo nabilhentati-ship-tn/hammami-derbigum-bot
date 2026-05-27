@@ -21,6 +21,7 @@ async function loadFiches() {
       return {
         nom:     (cols[0] || "").replace(/"/g, "").trim(),
         famille: (cols[1] || "").replace(/"/g, "").trim(),
+        prix:    (cols[2] || "").replace(/"/g, "").trim(),
         lien:    (cols[3] || "").replace(/"/g, "").trim(),
       };
     }).filter(p => p.nom);
@@ -48,7 +49,22 @@ bot.on("message", async (msg) => {
 
   if (text === "/start" || text === "/aide") {
     return bot.sendMessage(chatId,
-      `👋 *Fiches Techniques — Comptoir Hammami*\n\nFamilles disponibles :\n• 🔵 Derbigum\n• 🟢 Isolation\n\nTape le nom d'un produit :\n\n• carocol\n• chebigol\n• isolation toiture\n• derbigum\n\nJe t'envoie le lien PDF directement.`,
+      `👋 *Fiches Techniques — Comptoir Hammami*\n\nFamilles disponibles :\n• 🔵 Derbigum\n• 🟢 Isolation\n\nTape le nom d'un produit :\n\n• carocol\n• chebigol\n• isolation toiture\n• derbigum\n\nCommandes :\n/liste — voir tout le catalogue\n/prix — consulter les tarifs\n\nJe t'envoie le lien PDF directement.`,
+      { parse_mode: "Markdown" }
+    );
+  }
+
+  if (text === "/prix") {
+    const avecPrix = fiches.filter(f => f.prix);
+    if (avecPrix.length === 0) {
+      return bot.sendMessage(chatId,
+        `ℹ️ Aucun tarif disponible pour le moment.`,
+        { parse_mode: "Markdown" }
+      );
+    }
+    const liste = avecPrix.slice(0, 20).map(f => `• *${f.nom}* — ${f.prix}`).join("\n");
+    return bot.sendMessage(chatId,
+      `💰 *Tarifs disponibles :*\n\n${liste}${avecPrix.length > 20 ? `\n\n_...et ${avecPrix.length - 20} autres. Affine ta recherche._` : ""}`,
       { parse_mode: "Markdown" }
     );
   }
@@ -82,9 +98,12 @@ bot.on("message", async (msg) => {
     );
   }
 
-  const reponse = resultats.map(f =>
-    `📄 *${f.nom}*\n🏷️ ${f.famille}\n[👉 Ouvrir la fiche PDF](${f.lien})`
-  ).join("\n\n");
+  const reponse = resultats.map(f => {
+    let msg = `📄 *${f.nom}*\n🏷️ ${f.famille}`;
+    if (f.prix) msg += `\n💰 ${f.prix}`;
+    if (f.lien) msg += `\n[👉 Ouvrir la fiche PDF](${f.lien})`;
+    return msg;
+  }).join("\n\n");
 
   bot.sendMessage(chatId, reponse, { parse_mode: "Markdown" });
 });
